@@ -17,6 +17,14 @@ echo ""
 
 cd ~/wii-covers
 
+# STEP 0: REDOWNLOAD THE LATEST wii-html.py
+echo -e "${YELLOW}⬇️ Downloading latest wii-html.py from GitHub...${NC}"
+mv wii-html.py wii-html.py.bak 2>/dev/null || true
+wget -O wii-html.py https://raw.githubusercontent.com/igiteam/wii-covers/refs/heads/main/wii-html.py
+chmod +x wii-html.py
+echo -e "${BLUE}✅ wii-html.py updated${NC}"
+echo ""
+
 # STEP 1: REGENERATE HTML FROM LATEST JSON
 echo -e "${YELLOW}🔄 Regenerating index.html from latest data...${NC}"
 python3 wii-html.py
