@@ -2,7 +2,7 @@
 """
 Wii Games Grid Generator
 Creates an Xemu-style grid website from your Wii games JSON
-Removes duplicates by TITLE, keeps "Play" status with green background
+Shows title as text overlay when image fails to load
 """
 
 import json
@@ -41,7 +41,7 @@ def load_games_data():
     return unique_games
 
 def generate_html(games):
-    """Generate the grid website HTML matching the exact pattern"""
+    """Generate the grid website HTML"""
     
     games.sort(key=lambda x: x['title'].lower())
     
@@ -102,18 +102,47 @@ def generate_html(games):
 
     .title-card-container {{
       width: 100%;
+      position: relative;
     }}
 
     .title-card-image-container {{
       width: 100%;
       aspect-ratio: 3/4;
       overflow: hidden;
+      position: relative;
+      background-color: #1a1a1a;
     }}
 
     .title-card-image-container img {{
       width: 100%;
       height: 100%;
       object-fit: cover;
+      transition: opacity 0.3s;
+    }}
+
+    /* Style for when image fails to load */
+    .title-card-image-container img.error {{
+      opacity: 0;
+    }}
+
+    .title-card-image-container .fallback-title {{
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 10px;
+      box-sizing: border-box;
+      background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+      color: #888;
+      font-size: 14px;
+      font-weight: 500;
+      word-break: break-word;
+      border: 1px solid #333;
     }}
 
     .fill-color-Playable {{
@@ -238,16 +267,14 @@ def generate_html(games):
     <div class="col px-1 mb-4 title-card" data-title-name="{title}" data-title-status="Play">
       <a target="_blank" rel="norefferer" href="https://github.com/igiteam/wii-covers">
         <div class="mx-auto title-card-container">
-
-          <div class="title-card-image-container" style="background-position: -3520px -4600px; filter: none;">
+          <div class="title-card-image-container">
             <img
-              data-src="{cover_url}"
-              class="img-fluid loaded" loading="lazy" title="{title}"
               src="{cover_url}"
-              onerror="this.onerror=null; this.src='{PLACEHOLDER_IMAGE}';"
-              style="opacity: 1;">
+              loading="lazy"
+              title="{title}"
+              onerror="this.classList.add('error'); this.parentNode.querySelector('.fallback-title').style.display='flex'; this.style.display='none';">
+            <div class="fallback-title" style="display: none;">{title}</div>
           </div>
-
           <div class="fill-color-Playable card-body text-center py-1 my-0"><small><strong>Play</strong></small></div>
         </div>
       </a>
@@ -257,26 +284,21 @@ def generate_html(games):
   </div>
 
   <script>
-    // Convert title cards to links - run immediately and also after dynamic content loads
+    // Convert title cards to links
     function wrapCardsWithLinks() {{
-      // Find all title cards
       document.querySelectorAll('.title-card').forEach(card => {{
         const serial = card.getAttribute('data-serial');
         const title = card.getAttribute('data-title-name');
         const status = card.getAttribute('data-title-status');
 
-        // Remove the existing anchor tag that's INSIDE the card
         const existingInnerLink = card.querySelector('a');
         if (existingInnerLink) {{
-          // Move all children of the anchor to the card
           while (existingInnerLink.firstChild) {{
             card.insertBefore(existingInnerLink.firstChild, existingInnerLink);
           }}
-          // Remove the empty anchor
           existingInnerLink.remove();
         }}
 
-        // Determine the path - USE TITLE FIRST, then fall back to serial
         let url_path = '';
         if (title) {{
           url_path = title
@@ -292,7 +314,6 @@ def generate_html(games):
         if (url_path) {{
           const urlParams = new URLSearchParams(window.location.search);
           const targetUrl = urlParams.get('url');
-
           const link = document.createElement('a');
 
           if (targetUrl) {{
@@ -320,15 +341,13 @@ def generate_html(games):
       }});
     }}
 
-    // Run immediately
+    // Run link wrapping
     wrapCardsWithLinks();
-
     if (document.readyState === 'loading') {{
       document.addEventListener('DOMContentLoaded', wrapCardsWithLinks);
     }} else {{
       wrapCardsWithLinks();
     }}
-
     setTimeout(wrapCardsWithLinks, 500);
 
     // Search functionality
@@ -356,7 +375,7 @@ def generate_html(games):
         searchTerm ? `Found ${{count}} game${{count !== 1 ? 's' : ''}}` : '';
     }});
 
-    // Keyboard shortcut: / to focus search
+    // Keyboard shortcut
     document.addEventListener('keydown', function(e) {{
       if (e.key === '/' && !document.getElementById('saved-search-input').matches(':focus')) {{
         e.preventDefault();
