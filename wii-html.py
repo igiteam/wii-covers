@@ -12,7 +12,7 @@ from datetime import datetime
 # Configuration
 JSON_FILE = "wii_games_covers.json"
 OUTPUT_HTML = "index.html"
-PLACEHOLDER_IMAGE = "https://github.com/igiteam/wii-covers/blob/main/covers/wii-cover-default.png"
+PLACEHOLDER_IMAGE = "https://raw.githubusercontent.com/igiteam/wii-covers/main/covers/wii-cover-default.png"
 RAW_BASE_URL = "https://raw.githubusercontent.com/igiteam/wii-covers/main/covers"
 
 def load_games_data():
@@ -47,17 +47,17 @@ def generate_html(games):
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Wii Games Collection</title>
 
-  <link rel="icon" href="https://cdn.sdappnet.cloud/rtx/images/wii-logo.png" type="image/png">
-  <link rel="apple-touch-icon" href="https://cdn.sdappnet.cloud/rtx/images/wii-logo.png" sizes="180x180">
-  <link rel="icon" type="image/png" href="https://cdn.sdappnet.cloud/rtx/images/wii-logo.png" sizes="192x192">
-  <link rel="icon" type="image/png" href="https://cdn.sdappnet.cloud/rtx/images/wii-logo.png" sizes="512x512">
+  <link rel="icon" href="https://cdn.sdappnet.cloud/rtx/images/dolphin_wii_icon.png" type="image/png">
+  <link rel="apple-touch-icon" href="https://cdn.sdappnet.cloud/rtx/images/dolphin_wii_icon.png" sizes="180x180">
+  <link rel="icon" type="image/png" href="https://cdn.sdappnet.cloud/rtx/images/dolphin_wii_icon.png" sizes="192x192">
+  <link rel="icon" type="image/png" href="https://cdn.sdappnet.cloud/rtx/images/dolphin_wii_icon.png" sizes="512x512">
   <meta itemprop="name" content="Wii Games Collection">
   <meta property="og:title" content="Wii Games Collection">
   <meta property="og:url" content="">
   <meta property="og:type" content="website">
   <meta name="twitter:title" content="Wii Games Collection">
   <meta name="twitter:card" content="summary_large_image">
-  <link rel="apple-touch-icon" href="https://cdn.sdappnet.cloud/rtx/images/wii-logo.png" sizes="180x180">
+  <link rel="apple-touch-icon" href="https://cdn.sdappnet.cloud/rtx/images/dolphin_wii_icon.png" sizes="180x180">
 
   <style>
     body {{
@@ -194,18 +194,18 @@ def generate_html(games):
 <body>
   <div id="saved-search-container">
     <div class="search-row">
-      <img src="https://cdn.sdappnet.cloud/rtx/images/wii-logo.png" style="width:34px; border-radius: 4px; background: white; padding: 2px;"
-        alt="Wii logo" onerror="this.style.display='none'">
+      <img src="https://cdn.sdappnet.cloud/rtx/images/dolphin_wii_icon.png" style="width:34px; border-radius: 4px; background: white; padding: 2px;"
+        alt="Wii logo">
       <input type="text" id="saved-search-input" placeholder="Search games...">
-      <a href="https://github.com/igiteam/wii-covers" target="_blank">
-        <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" 
+      <a href="https://github.com/igiteam/wii-joycon" target="_blank">
+        <img src="https://cdn.sdappnet.cloud/rtx/images/wiimote_icon.png" 
              style="width:34px; border-radius: 4px; background: white; padding: 2px;" 
              alt="GitHub">
       </a>
-      <a href="https://nintendo.com" target="_blank">
-        <img src="https://cdn.sdappnet.cloud/rtx/images/nintendo-logo.png" 
+      <a href="https://cdn.sdappnet.cloud/rtx/nintendo-magazine.html" target="_blank">
+        <img src="https://cdn.sdappnet.cloud/rtx/images/nintendo-magazine.png" 
              style="width:34px; border-radius: 4px; background: white; padding: 2px;" 
-             alt="Nintendo" onerror="this.style.display='none'">
+             alt="Nintendo">
       </a>
     </div>
     <div id="saved-results-count"></div>
@@ -228,7 +228,7 @@ def generate_html(games):
             status_text = "Play"
         else:
             cover_url = PLACEHOLDER_IMAGE
-            status_text = "Missing"
+            status_text = "Play"
         
         html += f"""
     <div class="col px-1 mb-4 title-card" data-title-name="{title}" data-title-status="{status_text}">
@@ -298,7 +298,7 @@ def generate_html(games):
           if (targetUrl) {{
             link.href = targetUrl.replace(/\\/$/, '') + '/wii/' + url_path;
           }} else {{
-            link.href = 'https://github.com/igiteam/wii-covers/search?q=' + encodeURIComponent(title);
+            link.href = 'https://meyt.netlify.app/search/' + encodeURIComponent(title) + ' wii';
           }}
 
           link.className = 'title-card-link';
