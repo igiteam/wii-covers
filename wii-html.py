@@ -2,7 +2,7 @@
 """
 Wii Games Grid Generator
 Creates an Xemu-style grid website from your Wii games JSON
-Matches exact HTML pattern from the Xbox Xemu page
+Removes duplicates by TITLE, keeps "Play" status with green background
 """
 
 import json
@@ -16,7 +16,7 @@ PLACEHOLDER_IMAGE = "https://raw.githubusercontent.com/igiteam/wii-covers/main/c
 RAW_BASE_URL = "https://raw.githubusercontent.com/igiteam/wii-covers/main/covers"
 
 def load_games_data():
-    """Load games from JSON file"""
+    """Load games from JSON file and remove duplicates by TITLE"""
     if not os.path.exists(JSON_FILE):
         print(f"❌ Error: {JSON_FILE} not found!")
         print("Please run the cover downloader first to generate the JSON file.")
@@ -25,8 +25,20 @@ def load_games_data():
     with open(JSON_FILE, 'r', encoding='utf-8') as f:
         games = json.load(f)
     
-    print(f"✅ Loaded {len(games)} games from {JSON_FILE}")
-    return games
+    # Remove duplicates by TITLE (keep first occurrence)
+    seen_titles = set()
+    unique_games = []
+    for game in games:
+        title = game['title'].lower().strip()  # Normalize title
+        if title not in seen_titles:
+            seen_titles.add(title)
+            unique_games.append(game)
+    
+    if len(unique_games) < len(games):
+        print(f"✅ Removed {len(games) - len(unique_games)} duplicates by title")
+    
+    print(f"✅ Loaded {len(unique_games)} unique games from {JSON_FILE}")
+    return unique_games
 
 def generate_html(games):
     """Generate the grid website HTML matching the exact pattern"""
@@ -214,7 +226,7 @@ def generate_html(games):
   <div class="row" id="results">
 """
 
-    # Add each game card - exactly matching the Xbox structure
+    # Add each game card
     for game in games:
         game_id = game['id']
         title = game['title'].replace('"', '&quot;')
@@ -222,17 +234,17 @@ def generate_html(games):
         # Determine cover URL
         if game['cover_url'] != PLACEHOLDER_IMAGE:
             cover_url = game['cover_url']
-            status_text = "Play"
         elif game['3d_cover_url'] != PLACEHOLDER_IMAGE:
             cover_url = game['3d_cover_url']
-            status_text = "Play"
         else:
             cover_url = PLACEHOLDER_IMAGE
-            status_text = "Play"
+        
+        # Create search-friendly URL for the game
+        search_url = f"https://meyt.netlify.app/search/{game_id} wii"
         
         html += f"""
-    <div class="col px-1 mb-4 title-card" data-title-name="{title}" data-title-status="{status_text}">
-      <a target="_blank" rel="norefferer" href="https://github.com/igiteam/wii-covers">
+    <div class="col px-1 mb-4 title-card" data-title-name="{title}" data-title-status="Play">
+      <a target="_blank" rel="norefferer" href="{search_url}">
         <div class="mx-auto title-card-container">
 
           <div class="title-card-image-container" style="background-position: -3520px -4600px; filter: none;">
@@ -244,7 +256,7 @@ def generate_html(games):
               style="opacity: 1;">
           </div>
 
-          <div class="fill-color-Playable card-body text-center py-1 my-0"><small><strong>{status_text}</strong></small></div>
+          <div class="fill-color-Playable card-body text-center py-1 my-0"><small><strong>Play</strong></small></div>
         </div>
       </a>
     </div>
@@ -254,93 +266,6 @@ def generate_html(games):
   </div>
 
   <script>
-    // Convert title cards to links - run immediately and also after dynamic content loads
-    function wrapCardsWithLinks() {{
-      // Find all title cards
-      document.querySelectorAll('.title-card').forEach(card => {{
-        const serial = card.getAttribute('data-serial');
-        const title = card.getAttribute('data-title-name');
-        const status = card.getAttribute('data-title-status');
-
-        // Remove the existing anchor tag that's INSIDE the card
-        const existingInnerLink = card.querySelector('a');
-        if (existingInnerLink) {{
-          // Move all children of the anchor to the card
-          while (existingInnerLink.firstChild) {{
-            card.insertBefore(existingInnerLink.firstChild, existingInnerLink);
-          }}
-          // Remove the empty anchor
-          existingInnerLink.remove();
-        }}
-
-        // Determine the path - USE TITLE FIRST, then fall back to serial
-        let url_path = '';
-        if (title) {{
-          url_path = title
-            .toLowerCase()
-            .replace(/[^\\w\\s-]/g, '')  // Remove special characters
-            .replace(/\\s+/g, '-')       // Replace spaces with hyphens
-            .replace(/-+/g, '-')        // Replace multiple hyphens with single
-            .replace(/^-|-$/g, '');     // Remove leading/trailing hyphens
-        }} else if (serial) {{
-          url_path = serial;  // Fallback to serial if no title
-        }}
-
-        if (url_path) {{
-          // Get the base URL from current page
-          const urlParams = new URLSearchParams(window.location.search);
-          const targetUrl = urlParams.get('url');
-
-          // Create the new link
-          const link = document.createElement('a');
-
-          // Set href based on targetUrl
-          if (targetUrl) {{
-            link.href = targetUrl.replace(/\\/$/, '') + '/wii/' + url_path;
-          }} else {{
-            link.href = 'https://meyt.netlify.app/search/' + encodeURIComponent(title) + ' wii';
-          }}
-
-          link.className = 'title-card-link';
-          link.rel = 'noopener noreferrer';
-          link.target = '_blank';
-          
-          // Copy data attributes to link for search
-          if (title) link.setAttribute('data-title-name', title);
-          if (serial) link.setAttribute('data-serial', serial);
-          if (status) link.setAttribute('data-title-status', status);
-
-          // Wrap the card with the new link
-          card.parentNode.insertBefore(link, card);
-          link.appendChild(card);
-
-          // Update status badge appearance
-          const badge = card.querySelector('.fill-color-Playable, .status-badge');
-          if (badge) {{
-            // Remove existing fill-color classes
-            badge.className = badge.className.replace(/fill-color-\\S+/g, '');
-            // Add new status class
-            if (status) {{
-              badge.classList.add('status-' + status.toLowerCase());
-            }}
-          }}
-        }}
-      }});
-    }}
-
-    // Run immediately
-    wrapCardsWithLinks();
-
-    // Also run after dynamic content loads
-    if (document.readyState === 'loading') {{
-      document.addEventListener('DOMContentLoaded', wrapCardsWithLinks);
-    }} else {{
-      wrapCardsWithLinks();
-    }}
-
-    // Run again after a short delay for any late-loading content
-    setTimeout(wrapCardsWithLinks, 500);
-
     // Search functionality
     document.getElementById('saved-search-input').addEventListener('input', function (e) {{
       const searchTerm = e.target.value.toLowerCase();
@@ -385,7 +310,7 @@ def main():
     print("🎮 Wii Games Grid Generator (Xemu Style)")
     print("=" * 50)
     
-    # Load games data
+    # Load games data (duplicates removed by title)
     games = load_games_data()
     if not games:
         return
@@ -405,11 +330,11 @@ def main():
     print(f"   - With 3D covers: {sum(1 for g in games if g['3d_cover_url'] != PLACEHOLDER_IMAGE)}")
     print(f"\n🌐 Open {OUTPUT_HTML} in your browser to view the grid!")
     print("\n✨ Features:")
-    print("   - Exact Xemu page structure")
+    print("   - Duplicate removal by TITLE")
     print("   - Sticky search bar (press '/' to focus)")
     print("   - Real-time filtering by game name")
     print("   - Hover animations (scale effect)")
-    print("   - Green 'Play' status for games with covers")
+    print("   - Green 'Play' status for ALL games (class preserved)")
     print("   - Placeholder image for missing covers")
 
 if __name__ == "__main__":
