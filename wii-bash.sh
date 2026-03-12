@@ -608,6 +608,38 @@ EOF
 log "✅ All done! Share the download URL above!"
 log "ℹ️  Run 'check-wii-covers' anytime to see status"
 
+# cd ~/wii-covers
+
+# # Create wii_games_dolphin.html (copy of index.html)
+# cp index.html wii_games_dolphin.html
+
+# # Verify both exist
+# ls -la index.html wii_games_dolphin.html
+
+# # Create the complete ZIP archive
+# zip -r wii-covers-complete.zip \
+#     index.html \
+#     wii_games_dolphin.html \
+#     wii_games_covers.json \
+#     covers/ \
+#     README.md \
+#     wiitdb.txt \
+#     -x "*.git*" "venv/*" "__pycache__/*" "*.pyc"
+
+# # Check the ZIP
+# ls -la wii-covers-complete.zip
+# du -sh wii-covers-complete.zip
+
+# # Copy everything to web folder
+# cp wii-covers-complete.zip wii_games_dolphin.html /var/www/html/wii-covers/
+
+# # Check web directory
+# ls -la /var/www/html/wii-covers/
+
+# IP=$(curl -s ifconfig.me)
+# echo "http://$IP/wii-covers/wii_games_dolphin.html"
+# echo "http://$IP/wii-covers/wii-covers-complete.zip"
+
 # 🚀 Key Enhancements:
 #     ✅ Nginx verification - Checks if installed, tests config, verifies it's running
 #     ✅ Firewall setup - Opens ports 80/443 automatically
