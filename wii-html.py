@@ -272,8 +272,8 @@ def generate_html(games):
             src="{cover_url}"
             loading="lazy"
             title="{title}"
-            onerror="this.classList.add('error'); this.src='{PLACEHOLDER_IMAGE}'; this.parentNode.querySelector('.fallback-title').style.display='flex';">
-          <div class="fallback-title" style="display: none; position: absolute; bottom: 0; left: 0; right: 0; color: white; padding: 8px; font-size: 12px; text-align: center;">{title}</div>
+            onerror="this.classList.add('error'); this.parentNode.querySelector('.fallback-title').style.display='flex';">
+          <div class="fallback-title" style="display: none; position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 8px; font-size: 12px; text-align: center;">{title}</div>
           </div>
           <div class="fill-color-Playable card-body text-center py-1 my-0"><small><strong>Play</strong></small></div>
         </div>
