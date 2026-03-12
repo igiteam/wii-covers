@@ -258,27 +258,33 @@ def generate_html(games):
         
         if game['cover_url'] != PLACEHOLDER_IMAGE:
             cover_url = game['cover_url']
+            has_real_cover = True
         elif game['3d_cover_url'] != PLACEHOLDER_IMAGE:
             cover_url = game['3d_cover_url']
+            has_real_cover = True
         else:
             cover_url = PLACEHOLDER_IMAGE
+            has_real_cover = False
+        
+        # If no real cover, show title overlay immediately
+        title_display = "flex" if not has_real_cover else "none"
         
         html += f"""
-    <div class="col px-1 mb-4 title-card" data-title-name="{title}" data-title-status="Play">
-      <a target="_blank" rel="norefferer" href="https://github.com/igiteam/wii-covers">
-        <div class="mx-auto title-card-container">
-          <div class="title-card-image-container">
-          <img
-            src="{cover_url}"
-            loading="lazy"
-            title="{title}"
-            onerror="this.classList.add('error'); this.parentNode.querySelector('.fallback-title').style.display='flex';">
-          <div class="fallback-title" style="display: none; position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 8px; font-size: 12px; text-align: center;">{title}</div>
-          </div>
-          <div class="fill-color-Playable card-body text-center py-1 my-0"><small><strong>Play</strong></small></div>
-        </div>
-      </a>
-    </div>"""
+        <div class="col px-1 mb-4 title-card" data-title-name="{title}" data-title-status="Play">
+          <a target="_blank" rel="norefferer" href="https://github.com/igiteam/wii-covers">
+            <div class="mx-auto title-card-container">
+              <div class="title-card-image-container" style="position: relative;">
+                <img
+                  src="{cover_url}"
+                  loading="lazy"
+                  title="{title}"
+                  onerror="this.classList.add('error'); this.src='{PLACEHOLDER_IMAGE}'; this.parentNode.querySelector('.fallback-title').style.display='flex';">
+                <div class="fallback-title" style="display: {title_display}; position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.9)); color: white; padding: 15px 8px 8px 8px; font-size: 12px; text-align: center; font-weight: 500;">{title}</div>
+              </div>
+              <div class="fill-color-Playable card-body text-center py-1 my-0"><small><strong>Play</strong></small></div>
+            </div>
+          </a>
+        </div>"""
 
     html += f"""
   </div>
