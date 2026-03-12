@@ -236,7 +236,7 @@ def generate_html(games):
       <img src="https://cdn.sdappnet.cloud/rtx/images/dolphin_wii_icon.png" style="width:34px; border-radius: 4px; background: white; padding: 2px;"
         alt="Wii logo">
       <input type="text" id="saved-search-input" placeholder="Search games...">
-      <a href="https://github.com/igiteam/wii-joycon" target="_blank">
+      <a href="https://github.com/igiteam/wiimote" target="_blank">
         <img src="https://cdn.sdappnet.cloud/rtx/images/wiimote_icon.png" 
              style="width:34px; border-radius: 4px; background: white; padding: 2px;" 
              alt="GitHub">

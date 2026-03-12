@@ -15,6 +15,11 @@ echo -e "${GREEN}📦 Wii Covers - Final Packaging${NC}"
 echo "=================================="
 echo ""
 
+# Create web directory if it doesn't exist
+echo -e "${YELLOW}📁 Ensuring web directory exists...${NC}"
+sudo mkdir -p /var/www/html/wii-covers/
+sudo chmod 755 /var/www/html/wii-covers/
+
 cd ~/wii-covers
 
 # STEP 0: REDOWNLOAD THE LATEST wii-html.py
