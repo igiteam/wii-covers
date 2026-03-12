@@ -436,3 +436,130 @@ Games: $(wc -l < wiitdb.txt | tr -d ' ')
 EOF
 
 log "✅ All done! Share the download URL above!"
+
+# # Check if tmux session is still running
+# tmux ls
+
+# # Check the wii-covers directory
+# ls -la ~/wii-covers/
+
+# # Check for the JSON file in the correct directory
+# ls -la ~/wii-covers/wii_games_covers.json
+
+# # If you want to see the progress, attach to the tmux session
+# tmux attach -t wii-download
+
+# ✅ tmux session - survives SSH disconnects
+
+# Let me break down how tmux works its magic to keep your downloads alive even when you close your laptop or your WiFi drops.
+# The Problem It Solves
+
+# Normally, when you SSH into a server and run a command (like your downloader), that process is tied to your SSH session. If you:
+#     Close your terminal
+#     Lose WiFi
+#     Put your laptop to sleep
+#     Your SSH connection times out
+
+# POOF! The process dies and your download stops .
+# What Tmux Does
+
+# Tmux is a terminal multiplexer - think of it as giving each of your programs its own permanent "room" on the server that exists independently of you .
+# The Architecture
+
+# Here's what happens behind the scenes:
+
+# ┌─────────────────────────────────────────┐
+# │         YOUR LOCAL COMPUTER              │
+# │  ┌────────────────────────────────┐     │
+# │  │   SSH Client (temporary)       │     │
+# │  └────────────┬───────────────────┘     │
+# └───────────────┼─────────────────────────┘
+#                 │ SSH connection
+#                 ▼ (may disconnect!)
+# ┌─────────────────────────────────────────┐
+# │         DIGITAL OCEAN SERVER             │
+# │  ┌────────────────────────────────┐     │
+# │  │   TMUX SERVER PROCESS          │     │
+# │  │   (runs continuously)          │     │
+# │  │  ┌────────────────────────┐    │     │
+# │  │  │ Session "wii-download" │    │     │
+# │  │  │  ┌────────────────┐    │    │     │
+# │  │  │  │ Your Python    │    │    │     │
+# │  │  │  │ Downloader     │    │    │     │
+# │  │  │  │ (PID 12345)    │    │    │     │
+# │  │  │  └────────────────┘    │    │     │
+# │  │  └────────────────────────┘    │     │
+# │  └────────────────────────────────┘     │
+# │                                         │
+# │  ┌────────────────────────────────┐     │
+# │  │   SSH Client (reattach later)  │     │
+# │  └────────────┬───────────────────┘     │
+# └───────────────┼─────────────────────────┘
+#                 │ New SSH connection
+#                 ▼
+#          You're back in!
+
+# Key Concepts
+# 1. Client-Server Model
+#     Server: Runs continuously on your Digital Ocean droplet, managing all sessions
+#     Client: The terminal window you're using to interact with tmux
+#     You can disconnect the client, but the server keeps running 
+
+# 2. Sessions
+#     A session is a container for your running programs
+#     Each session has its own:
+#         Windows (like tabs)
+#         Panes (split screens)
+#         Environment variables
+#         Running processes 
+
+# 3. Detach/Attach
+
+# # Start a new session
+# tmux new -s wii-download
+
+# # Run your program inside
+# python wii-downloader.py
+
+# # Detach (program keeps running!)
+# # Press: Ctrl+B, then D
+# # Or type: tmux detach
+
+# # Later, reattach to check progress
+# tmux attach -t wii-download
+
+# Why Your Download Survives
+
+# When you run your script inside tmux:
+#     Process Independence: Your Python script becomes a child of the tmux server process, not your SSH session
+#     Signal Handling: When SSH disconnects, the tmux server ignores the hangup signals that would normally kill processes
+#     Socket Communication: Tmux uses a socket file in /tmp to communicate between server and clients - when you reconnect, you're just attaching to that existing socket
+#     Session Persistence: The session continues running with all its processes intact, regardless of client connections 
+
+# The Commands You Used
+
+# # You ran this in your script:
+# tmux new-session -d -s "$SESSION_NAME" "cd $PROJECT_DIR && source venv/bin/activate && python3 wii-downloader.py"
+
+# # This means:
+# # -d           = Create session but don't attach (daemon mode)
+# # -s wii-download = Name the session
+# # The command   = Run inside the session, then keep it alive
+
+# Checking Your Session
+# # List all running sessions
+# tmux ls
+# # Output: wii-download: 1 windows (created Thu Mar 12 12:05:03 2026)
+
+# # Reattach to see progress
+# tmux attach -t wii-download
+
+# # Detach again: Ctrl+B, then D
+
+# Pro Tips
+#     Multiple windows: You can have several tabs in one session (Ctrl+B c)
+#     Split panes: Watch logs and run commands side-by-side (Ctrl+B % to split vertically)
+#     Scrollback: Use Ctrl+B [ to scroll through output, q to exit
+#     Named sessions: Always use -s to name sessions - makes reattaching easier 
+
+# So in simple terms: tmux is like giving your download its own apartment on the server. You can leave, come back, and it's still there doing its thing! 🔥
