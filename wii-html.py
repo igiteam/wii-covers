@@ -189,7 +189,7 @@ def generate_html(games):
       margin-right: auto;
       margin: 8px 0px;
       background: #1a1a1a;
-      padding: 10px 0;
+      padding: 0px;
     }}
 
     #saved-search-input {{
