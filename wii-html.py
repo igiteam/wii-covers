@@ -183,13 +183,10 @@ def generate_html(games):
     /* Search container */
     #saved-search-container {{
       position: sticky;
-      top: 0;
       z-index: 10000;
       margin-left: auto;
       margin-right: auto;
       margin: 8px 0px;
-      background: #1a1a1a;
-      padding: 0px;
     }}
 
     #saved-search-input {{
