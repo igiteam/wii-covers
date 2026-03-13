@@ -242,9 +242,11 @@ def generate_html(games):
       display: none !important;
     }}
 
+    /* Disable green highlight on search */
+    .title-card-link.highlight-saved,
     .highlight-saved {{
-      border: 3px solid #42991b;
-      box-shadow: 0 0 15px #42991b;
+      border: none !important;
+      box-shadow: none !important;
     }}
   </style>
 </head>
