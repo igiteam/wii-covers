@@ -4,6 +4,7 @@ Wii Cover Downloader - Python Edition
 Reads a wiitdb.txt file and downloads covers from GameTDB
 Organizes covers in 2d/ and 3d/ folders with ID as filename
 Saves JSON after EVERY game so you always have up-to-date data
+Uses GitHub URLs for all covers (existing or downloaded)
 """
 
 import os
@@ -19,9 +20,7 @@ from urllib3.util.retry import Retry
 # Configuration
 COVERS_FOLDER = "covers"
 JSON_FILE = "wii_games_covers.json"
-BACKUP_JSON_FILE = "wii_games_covers_backup.json"  # Backup file
-GITHUB_BASE_URL = "https://github.com/igiteam/wii-covers/blob/main/covers"
-PLACEHOLDER_IMAGE = "https://github.com/igiteam/wii-covers/blob/main/covers/wii-cover-default.png"
+BACKUP_JSON_FILE = "wii_games_covers_backup.json"
 RAW_BASE_URL = "https://raw.githubusercontent.com/igiteam/wii-covers/main/covers"
 
 # Download settings
@@ -39,14 +38,34 @@ class WiiCoverDownloader:
         self.results = []
         self.session = self._create_session()
         self.consecutive_failures = 0
+        self.existing_2d = set()
+        self.existing_3d = set()
         
         # Create folder structure
         Path(COVERS_FOLDER).mkdir(parents=True, exist_ok=True)
         Path(os.path.join(COVERS_FOLDER, "2d")).mkdir(parents=True, exist_ok=True)
         Path(os.path.join(COVERS_FOLDER, "3d")).mkdir(parents=True, exist_ok=True)
         
+        # Scan for existing covers
+        self.scan_existing_covers()
+        
         # Try to load existing progress
         self.load_existing_progress()
+    
+    def scan_existing_covers(self):
+        """Scan for already downloaded cover files"""
+        # Scan 2D covers
+        if os.path.exists(os.path.join(COVERS_FOLDER, "2d")):
+            for file in Path(os.path.join(COVERS_FOLDER, "2d")).glob("*.png"):
+                self.existing_2d.add(file.stem)
+        
+        # Scan 3D covers
+        if os.path.exists(os.path.join(COVERS_FOLDER, "3d")):
+            for file in Path(os.path.join(COVERS_FOLDER, "3d")).glob("*.png"):
+                self.existing_3d.add(file.stem)
+        
+        print(f"📁 Found {len(self.existing_2d)} existing 2D covers")
+        print(f"📁 Found {len(self.existing_3d)} existing 3D covers")
         
     def _create_session(self):
         """Create a requests session with retry strategy"""
@@ -96,8 +115,8 @@ class WiiCoverDownloader:
         # Only show stats on final save or every 100 games
         if is_final or len(self.results) % 100 == 0:
             total = len(self.results)
-            with_2d = sum(1 for g in self.results if g['cover_url'] != PLACEHOLDER_IMAGE)
-            with_3d = sum(1 for g in self.results if g['3d_cover_url'] != PLACEHOLDER_IMAGE)
+            with_2d = sum(1 for g in self.results if g['cover_url'] != "placeholder")
+            with_3d = sum(1 for g in self.results if g['3d_cover_url'] != "placeholder")
             
             print(f"\n📊 Current progress: {total} games processed")
             print(f"   - 2D covers: {with_2d} ({with_2d/total*100:.1f}%)")
@@ -229,12 +248,6 @@ class WiiCoverDownloader:
             print(f"📝 Resuming from game {processed_count + 1}/{total_games}")
         
         for i, game in enumerate(self.games, 1):
-            # Skip if already processed (for resume mode)
-            if self.is_game_already_processed(game['id']) and not force_redownload:
-                if i % 100 == 0:  # Only show progress every 100 games
-                    print(f"⏩ Game {i}/{total_games} already processed, skipping...")
-                continue
-            
             # Calculate progress and ETA
             elapsed = time.time() - start_time
             processed = i - 1
@@ -255,25 +268,48 @@ class WiiCoverDownloader:
             
             print(f"\n[{i}/{total_games}]{eta_str} {game['id']} - {game['title'][:50]}...")
             
-            game_result = {
-                'title': game['title'],
-                'id': game['id'],
-                'cover_url': PLACEHOLDER_IMAGE,
-                '3d_cover_url': PLACEHOLDER_IMAGE
-            }
+            # Check if game already exists in results and we're not forcing redownload
+            existing_entry = None
+            if not force_redownload:
+                for result in self.results:
+                    if result['id'] == game['id']:
+                        existing_entry = result
+                        break
             
-            # Try to download 2D cover
-            if self.download_cover(game['id'], '2d'):
-                game_result['cover_url'] = f"{RAW_BASE_URL}/2d/{game['id']}.png"
-                print(f"  ✅ 2D cover saved")
+            if existing_entry:
+                # Use existing entry
+                game_result = existing_entry
+                print(f"  📝 Using existing JSON entry")
+            else:
+                # Create new entry
+                game_result = {
+                    'title': game['title'],
+                    'id': game['id'],
+                    'cover_url': f"{RAW_BASE_URL}/2d/{game['id']}.png",
+                    '3d_cover_url': f"{RAW_BASE_URL}/3d/{game['id']}.png"
+                }
+                
+                # Check if covers already exist on disk
+                if game['id'] in self.existing_2d:
+                    print(f"  ✅ 2D cover already exists")
+                elif self.download_cover(game['id'], '2d'):
+                    print(f"  ✅ 2D cover downloaded")
+                    self.existing_2d.add(game['id'])
+                else:
+                    print(f"  ❌ 2D cover not found")
+                
+                if game['id'] in self.existing_3d:
+                    print(f"  ✅ 3D cover already exists")
+                elif self.download_cover(game['id'], '3d'):
+                    print(f"  ✅ 3D cover downloaded")
+                    self.existing_3d.add(game['id'])
+                else:
+                    print(f"  ❌ 3D cover not found")
+                
+                # Add to results
+                self.results.append(game_result)
             
-            # Try to download 3D cover
-            if self.download_cover(game['id'], '3d'):
-                game_result['3d_cover_url'] = f"{RAW_BASE_URL}/3d/{game['id']}.png"
-                print(f"  ✅ 3D cover saved")
-            
-            # Add to results and save JSON immediately
-            self.results.append(game_result)
+            # Save JSON after every game
             self.save_json()
             
             # Add delay between games
@@ -288,6 +324,7 @@ def main():
     print("🎮 Wii Cover Downloader - Python Edition")
     print("=" * 50)
     print("🔄 JSON updates after EVERY game - never lose progress!")
+    print("📁 Always uses GitHub URLs for all covers")
     print("=" * 50)
     
     # Check for the txt file
@@ -306,40 +343,54 @@ def main():
         return
     
     print(f"\n📊 Total games to process: {len(games)}")
-    print(f"📁 Already processed: {len(downloader.results)}")
+    print(f"📁 Already in JSON: {len(downloader.results)}")
+    print(f"📁 Existing 2D covers: {len(downloader.existing_2d)}")
+    print(f"📁 Existing 3D covers: {len(downloader.existing_3d)}")
     
     # Ask user what to do
     print("\n📋 What would you like to do?")
-    print("1. Download only missing covers (fastest)")
+    print("1. Download missing covers and update JSON (recommended)")
     print("2. Download all covers (redownload everything)")
-    print("3. Just create JSON with placeholders (no downloads)")
-    print("4. Resume interrupted download (skip existing)")
+    print("3. Generate JSON from existing covers (no downloads)")
+    print("4. Resume interrupted download")
     
     choice = input("\nEnter your choice (1/2/3/4): ").strip()
     
     if choice == '3':
-        # Just create JSON with placeholders
-        print("\n📝 Creating JSON with placeholders...")
+        # Generate JSON from existing covers
+        print("\n📝 Generating JSON from existing covers...")
+        
+        # Clear results and rebuild from scratch
+        downloader.results = []
+        
         for game in games:
-            if not downloader.is_game_already_processed(game['id']):
-                downloader.results.append({
-                    'title': game['title'],
-                    'id': game['id'],
-                    'cover_url': PLACEHOLDER_IMAGE,
-                    '3d_cover_url': PLACEHOLDER_IMAGE
-                })
-                # Save after each game even for placeholders
-                if len(downloader.results) % 10 == 0:
-                    downloader.save_json()
+            game_entry = {
+                'title': game['title'],
+                'id': game['id'],
+                'cover_url': f"{RAW_BASE_URL}/2d/{game['id']}.png",
+                '3d_cover_url': f"{RAW_BASE_URL}/3d/{game['id']}.png"
+            }
+            downloader.results.append(game_entry)
+            
+            # Save periodically
+            if len(downloader.results) % 100 == 0:
+                downloader.save_json()
+                print(f"  📝 Generated {len(downloader.results)} games...")
         
         downloader.save_json(is_final=True)
-        print(f"\n✅ Created JSON with {len(downloader.results)} games")
+        
+        # Show stats
+        with_2d = len(downloader.existing_2d)
+        with_3d = len(downloader.existing_3d)
+        print(f"\n✅ Generated JSON with {len(downloader.results)} games")
+        print(f"   - With 2D covers: {with_2d}")
+        print(f"   - With 3D covers: {with_3d}")
         
     elif choice in ['1', '2', '4']:
         # Download covers
         force = (choice == '2')
         if choice == '4':
-            print("📝 Resume mode: Will skip already downloaded files")
+            print("📝 Resume mode: Will skip already processed games")
             force = False
         
         downloader.download_all_covers(force_redownload=force)
@@ -362,38 +413,3 @@ if __name__ == "__main__":
         import requests
     
     main()
-
-# Key Changes:
-#     Separate folders: Now downloads to covers/2d/ and covers/3d/
-#     Clean filenames: Files are just [ID].png (e.g., D2AJAF.png)
-#     JSON URLs updated: Now points to covers/2d/D2AJAF.png and covers/3d/D2AJAF.png
-#     HTML report updated: Shows folder badges (📁 2d/ or 📁 3d/)
-#     Stats bar added: Clean stats display matching the Xemu style
-
-# Now your folder structure will be:
-
-# wii-covers/
-# ├── covers/
-# │   ├── 2d/
-# │   │   ├── D2AJAF.png
-# │   │   ├── D2SE18.png
-# │   │   └── ...
-# │   ├── 3d/
-# │   │   ├── D2AJAF.png
-# │   │   ├── D2SE18.png
-# │   │   └── ...
-# │   └── wii-cover-default.png
-# ├── wii_games_covers.json
-# ├── index.html
-# └── wii-downloader.py
-
-# The JSON will have clean URLs like:
-
-# {
-#   "title": "みんなで冒険！ファミリートレーナー 体験版",
-#   "id": "D2AJAF",
-#   "cover_url": "https://raw.githubusercontent.com/igiteam/wii-covers/main/covers/2d/D2AJAF.png",
-#   "3d_cover_url": "https://raw.githubusercontent.com/igiteam/wii-covers/main/covers/3d/D2AJAF.png"
-# }
-
-# Perfect for your GitHub repo! 🎮✨
