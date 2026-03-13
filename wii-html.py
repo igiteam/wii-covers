@@ -303,7 +303,7 @@ def generate_html(games):
     html += f"""
   </div>
 
-  <script>
+    <script>
       // Convert title cards to links - Wii style!
       function wrapCardsWithLinks() {{
         document.querySelectorAll('.title-card').forEach(card => {{
@@ -381,10 +381,10 @@ def generate_html(games):
       }}
       setTimeout(wrapCardsWithLinks, 500);
 
-      // Search functionality - FIXED VERSION (like Dreamcast)
+      // Search functionality - NO GREEN BORDERS
       document.getElementById('saved-search-input').addEventListener('input', function (e) {{
         const searchTerm = e.target.value.toLowerCase();
-        // Target the title-card-link elements directly (like dreamcast-card-link)
+        // Target the title-card-link elements directly
         const links = document.querySelectorAll('.title-card-link');
         let count = 0;
 
@@ -394,16 +394,16 @@ def generate_html(games):
           if (title.toLowerCase().includes(searchTerm) && searchTerm) {{
             // Show this item
             link.classList.remove('hidden-game');
-            link.classList.add('highlight-saved');
+            // REMOVED: link.classList.add('highlight-saved');
             count++;
           }} else if (searchTerm) {{
             // Hide this item
             link.classList.add('hidden-game');
-            link.classList.remove('highlight-saved');
+            // REMOVED: link.classList.remove('highlight-saved');
           }} else {{
             // Show all when search is cleared
             link.classList.remove('hidden-game');
-            link.classList.remove('highlight-saved');
+            // REMOVED: link.classList.remove('highlight-saved');
           }}
         }});
 
