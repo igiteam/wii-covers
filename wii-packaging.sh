@@ -22,6 +22,14 @@ sudo chmod 755 /var/www/html/wii-covers/
 
 cd ~/wii-covers
 
+# STEP 0: REDOWNLOAD THE LATEST wii-downloader.py
+echo -e "${YELLOW}⬇️ Downloading latest wii-downloader.py from GitHub...${NC}"
+mv wii-downloader.py wii-downloader.py.bak 2>/dev/null || true
+wget -O wii-downloader.py https://raw.githubusercontent.com/igiteam/wii-covers/refs/heads/main/wii-downloader.py
+chmod +x wii-downloader.py
+echo -e "${BLUE}✅ wii-html.py updated${NC}"
+echo ""
+
 # STEP 0: REDOWNLOAD THE LATEST wii-html.py
 echo -e "${YELLOW}⬇️ Downloading latest wii-html.py from GitHub...${NC}"
 mv wii-html.py wii-html.py.bak 2>/dev/null || true

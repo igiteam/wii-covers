@@ -34,7 +34,7 @@ MAX_CONSECUTIVE_FAILURES = 5
 class WiiCoverDownloader:
     def __init__(self, txt_file):
         self.txt_file = txt_file
-        self.games = []
+        self.games_dict = {}  # Dictionary mapping serial -> title
         self.results = []
         self.session = self._create_session()
         self.consecutive_failures = 0
@@ -46,11 +46,35 @@ class WiiCoverDownloader:
         Path(os.path.join(COVERS_FOLDER, "2d")).mkdir(parents=True, exist_ok=True)
         Path(os.path.join(COVERS_FOLDER, "3d")).mkdir(parents=True, exist_ok=True)
         
+        # Load titles from wiitdb.txt first
+        self.load_titles_from_txt()
+        
         # Scan for existing covers
         self.scan_existing_covers()
         
         # Try to load existing progress
         self.load_existing_progress()
+    
+    def load_titles_from_txt(self):
+        """Load all game titles from wiitdb.txt into a dictionary"""
+        if not os.path.exists(self.txt_file):
+            print(f"⚠️  Warning: {self.txt_file} not found!")
+            return
+        
+        print(f"📖 Reading titles from {self.txt_file}...")
+        try:
+            with open(self.txt_file, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if '=' in line and not line.startswith('TITLES'):
+                        parts = line.split('=', 1)
+                        serial = parts[0].strip()
+                        title = parts[1].strip()
+                        self.games_dict[serial] = title
+        except Exception as e:
+            print(f"⚠️  Error reading {self.txt_file}: {e}")
+        
+        print(f"✅ Loaded {len(self.games_dict)} game titles")
     
     def scan_existing_covers(self):
         """Scan for already downloaded cover files"""
@@ -115,8 +139,8 @@ class WiiCoverDownloader:
         # Only show stats on final save or every 100 games
         if is_final or len(self.results) % 100 == 0:
             total = len(self.results)
-            with_2d = sum(1 for g in self.results if g['cover_url'] != "placeholder")
-            with_3d = sum(1 for g in self.results if g['3d_cover_url'] != "placeholder")
+            with_2d = sum(1 for g in self.results if g['id'] in self.existing_2d)
+            with_3d = sum(1 for g in self.results if g['id'] in self.existing_3d)
             
             print(f"\n📊 Current progress: {total} games processed")
             print(f"   - 2D covers: {with_2d} ({with_2d/total*100:.1f}%)")
@@ -140,49 +164,6 @@ class WiiCoverDownloader:
             if re.match(pattern, game_id):
                 return False
         return True
-        
-    def parse_txt_file(self):
-        """Parse the wiitdb.txt file to extract game IDs and titles"""
-        print(f"📖 Reading {self.txt_file}...")
-        
-        try:
-            with open(self.txt_file, 'r', encoding='utf-8') as f:
-                lines = f.readlines()
-        except Exception as e:
-            print(f"❌ Error reading file: {e}")
-            return []
-        
-        skipped = 0
-        # Skip the header line
-        for line in lines:
-            line = line.strip()
-            if not line or line.startswith('TITLES ='):
-                continue
-                
-            match = re.match(r'^([A-Z0-9]{4,6})\s*=\s*(.+)$', line)
-            if match:
-                game_id = match.group(1)
-                title = match.group(2)
-                
-                # Skip invalid/system IDs
-                if not self.is_valid_game_id(game_id):
-                    skipped += 1
-                    continue
-                    
-                self.games.append({
-                    'id': game_id,
-                    'title': title
-                })
-        
-        print(f"✅ Found {len(self.games)} valid games (skipped {skipped} system/utility discs)")
-        return self.games
-    
-    def is_game_already_processed(self, game_id):
-        """Check if a game is already in results"""
-        for result in self.results:
-            if result['id'] == game_id:
-                return True
-        return False
     
     def download_cover(self, game_id, cover_type):
         """Download a specific cover type for a game"""
@@ -238,16 +219,22 @@ class WiiCoverDownloader:
         print(f"\n🖼️  Downloading covers...")
         print(f"⏱️  JSON will be updated after EVERY game")
         
-        total_games = len(self.games)
+        # Get list of games to process (from existing covers + potential new ones)
+        all_serials = set(self.existing_2d) | set(self.existing_3d) | set(self.games_dict.keys())
+        
+        # Filter out invalid/system IDs
+        valid_serials = [s for s in all_serials if self.is_valid_game_id(s)]
+        total_games = len(valid_serials)
+        
+        print(f"📊 Total unique valid games to process: {total_games}")
+        
         start_time = time.time()
         self.consecutive_failures = 0
         
-        # Count how many games we've already processed
-        processed_count = len(self.results)
-        if processed_count > 0:
-            print(f"📝 Resuming from game {processed_count + 1}/{total_games}")
+        # Build a set of already processed games from results
+        processed_serials = {r['id'] for r in self.results}
         
-        for i, game in enumerate(self.games, 1):
+        for i, game_id in enumerate(sorted(valid_serials), 1):
             # Calculate progress and ETA
             elapsed = time.time() - start_time
             processed = i - 1
@@ -266,48 +253,45 @@ class WiiCoverDownloader:
                 time.sleep(10)
                 self.consecutive_failures = 0
             
-            print(f"\n[{i}/{total_games}]{eta_str} {game['id']} - {game['title'][:50]}...")
+            # Get title from dictionary
+            title = self.games_dict.get(game_id, f"Unknown Game ({game_id})")
+            
+            print(f"\n[{i}/{total_games}]{eta_str} {game_id} - {title[:50]}...")
             
             # Check if game already exists in results and we're not forcing redownload
-            existing_entry = None
-            if not force_redownload:
-                for result in self.results:
-                    if result['id'] == game['id']:
-                        existing_entry = result
-                        break
+            if game_id in processed_serials and not force_redownload:
+                print(f"  📝 Already in JSON, skipping...")
+                continue
             
-            if existing_entry:
-                # Use existing entry
-                game_result = existing_entry
-                print(f"  📝 Using existing JSON entry")
+            # Create new entry
+            game_result = {
+                'title': title,
+                'id': game_id,
+                'cover_url': f"{RAW_BASE_URL}/2d/{game_id}.png",
+                '3d_cover_url': f"{RAW_BASE_URL}/3d/{game_id}.png"
+            }
+            
+            # Download missing 2D cover
+            if game_id in self.existing_2d:
+                print(f"  ✅ 2D cover already exists")
+            elif self.download_cover(game_id, '2d'):
+                print(f"  ✅ 2D cover downloaded")
+                self.existing_2d.add(game_id)
             else:
-                # Create new entry
-                game_result = {
-                    'title': game['title'],
-                    'id': game['id'],
-                    'cover_url': f"{RAW_BASE_URL}/2d/{game['id']}.png",
-                    '3d_cover_url': f"{RAW_BASE_URL}/3d/{game['id']}.png"
-                }
-                
-                # Check if covers already exist on disk
-                if game['id'] in self.existing_2d:
-                    print(f"  ✅ 2D cover already exists")
-                elif self.download_cover(game['id'], '2d'):
-                    print(f"  ✅ 2D cover downloaded")
-                    self.existing_2d.add(game['id'])
-                else:
-                    print(f"  ❌ 2D cover not found")
-                
-                if game['id'] in self.existing_3d:
-                    print(f"  ✅ 3D cover already exists")
-                elif self.download_cover(game['id'], '3d'):
-                    print(f"  ✅ 3D cover downloaded")
-                    self.existing_3d.add(game['id'])
-                else:
-                    print(f"  ❌ 3D cover not found")
-                
-                # Add to results
-                self.results.append(game_result)
+                print(f"  ⚠️ 2D cover not found")
+            
+            # Download missing 3D cover
+            if game_id in self.existing_3d:
+                print(f"  ✅ 3D cover already exists")
+            elif self.download_cover(game_id, '3d'):
+                print(f"  ✅ 3D cover downloaded")
+                self.existing_3d.add(game_id)
+            else:
+                print(f"  ⚠️ 3D cover not found")
+            
+            # Add to results
+            self.results.append(game_result)
+            processed_serials.add(game_id)
             
             # Save JSON after every game
             self.save_json()
@@ -324,51 +308,50 @@ def main():
     print("🎮 Wii Cover Downloader - Python Edition")
     print("=" * 50)
     print("🔄 JSON updates after EVERY game - never lose progress!")
-    print("📁 Always uses GitHub URLs for all covers")
+    print("📁 Based on actual cover files in covers/2d/")
+    print("📖 Titles from wiitdb.txt")
     print("=" * 50)
     
     # Check for the txt file
     txt_file = "wiitdb.txt"
     if not os.path.exists(txt_file):
-        print(f"❌ Error: {txt_file} not found!")
-        return
+        print(f"⚠️  Warning: {txt_file} not found! Titles will be missing.")
     
     # Create downloader instance
     downloader = WiiCoverDownloader(txt_file)
     
-    # Parse the txt file
-    games = downloader.parse_txt_file()
-    if not games:
-        print("❌ No valid games found!")
-        return
-    
-    print(f"\n📊 Total games to process: {len(games)}")
-    print(f"📁 Already in JSON: {len(downloader.results)}")
+    print(f"\n📊 Statistics:")
     print(f"📁 Existing 2D covers: {len(downloader.existing_2d)}")
     print(f"📁 Existing 3D covers: {len(downloader.existing_3d)}")
+    print(f"📖 Titles loaded: {len(downloader.games_dict)}")
+    print(f"📂 Already in JSON: {len(downloader.results)}")
     
     # Ask user what to do
     print("\n📋 What would you like to do?")
-    print("1. Download missing covers and update JSON (recommended)")
+    print("1. Download missing covers and update JSON")
     print("2. Download all covers (redownload everything)")
-    print("3. Generate JSON from existing covers (no downloads)")
+    print("3. Generate JSON from existing covers only (fastest)")
     print("4. Resume interrupted download")
     
     choice = input("\nEnter your choice (1/2/3/4): ").strip()
     
     if choice == '3':
-        # Generate JSON from existing covers
-        print("\n📝 Generating JSON from existing covers...")
+        # Generate JSON from existing covers only
+        print("\n📝 Generating JSON from existing cover files...")
         
-        # Clear results and rebuild from scratch
+        # Clear results and rebuild from scratch using existing 2D covers
         downloader.results = []
         
-        for game in games:
+        # Use existing 2D covers as the source of truth
+        for serial in sorted(downloader.existing_2d):
+            # Get title from dictionary
+            title = downloader.games_dict.get(serial, f"Unknown Game ({serial})")
+            
             game_entry = {
-                'title': game['title'],
-                'id': game['id'],
-                'cover_url': f"{RAW_BASE_URL}/2d/{game['id']}.png",
-                '3d_cover_url': f"{RAW_BASE_URL}/3d/{game['id']}.png"
+                'title': title,
+                'id': serial,
+                'cover_url': f"{RAW_BASE_URL}/2d/{serial}.png",
+                '3d_cover_url': f"{RAW_BASE_URL}/3d/{serial}.png"
             }
             downloader.results.append(game_entry)
             
@@ -380,10 +363,9 @@ def main():
         downloader.save_json(is_final=True)
         
         # Show stats
-        with_2d = len(downloader.existing_2d)
-        with_3d = len(downloader.existing_3d)
+        with_3d = len([s for s in downloader.existing_2d if s in downloader.existing_3d])
         print(f"\n✅ Generated JSON with {len(downloader.results)} games")
-        print(f"   - With 2D covers: {with_2d}")
+        print(f"   - With 2D covers: {len(downloader.existing_2d)}")
         print(f"   - With 3D covers: {with_3d}")
         
     elif choice in ['1', '2', '4']:
