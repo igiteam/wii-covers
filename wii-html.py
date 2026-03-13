@@ -25,6 +25,13 @@ def load_games_data():
     with open(JSON_FILE, 'r', encoding='utf-8') as f:
         games = json.load(f)
     
+    # Debug: Check for Call of Duty
+    cod_games = [g for g in games if 'call of duty' in g['title'].lower()]
+    if cod_games:
+        print(f"🔍 Found {len(cod_games)} Call of Duty games in JSON:")
+        for g in cod_games:
+            print(f"   - {g['title']}")
+    
     # Remove duplicates by TITLE (keep first occurrence)
     seen_titles = set()
     unique_games = []
@@ -38,6 +45,14 @@ def load_games_data():
         print(f"✅ Removed {len(games) - len(unique_games)} duplicates by title")
     
     print(f"✅ Loaded {len(unique_games)} unique games from {JSON_FILE}")
+    
+    # Debug: Check if Call of Duty survived deduplication
+    cod_unique = [g for g in unique_games if 'call of duty' in g['title'].lower()]
+    if cod_unique:
+        print(f"🔍 After deduplication: {len(cod_unique)} Call of Duty games")
+        for g in cod_unique:
+            print(f"   - {g['title']}")
+    
     return unique_games
 
 def generate_html(games):
@@ -289,104 +304,120 @@ def generate_html(games):
   </div>
 
   <script>
-    // Convert title cards to links
-    function wrapCardsWithLinks() {{
-      document.querySelectorAll('.title-card').forEach(card => {{
-        const serial = card.getAttribute('data-serial');
-        const title = card.getAttribute('data-title-name');
-        const status = card.getAttribute('data-title-status');
+      // Convert title cards to links - Wii style!
+      function wrapCardsWithLinks() {{
+        document.querySelectorAll('.title-card').forEach(card => {{
+          const serial = card.getAttribute('data-serial');
+          const title = card.getAttribute('data-title-name');
+          const status = card.getAttribute('data-title-status');
 
-        const existingInnerLink = card.querySelector('a');
-        if (existingInnerLink) {{
-          while (existingInnerLink.firstChild) {{
-            card.insertBefore(existingInnerLink.firstChild, existingInnerLink);
-          }}
-          existingInnerLink.remove();
-        }}
-
-        let url_path = '';
-        if (title) {{
-          url_path = title
-            .toLowerCase()
-            .replace(/[^\\w\\s-]/g, '')
-            .replace(/\\s+/g, '-')
-            .replace(/-+/g, '-')
-            .replace(/^-|-$/g, '');
-        }} else if (serial) {{
-          url_path = serial;
-        }}
-
-        if (url_path) {{
-          const urlParams = new URLSearchParams(window.location.search);
-          const targetUrl = urlParams.get('url');
-          const link = document.createElement('a');
-
-          if (targetUrl) {{
-            link.href = targetUrl.replace(/\\/$/, '') + '/wii/' + url_path;
-          }} else {{
-            link.href = 'https://meyt.netlify.app/search/' + url_path + ' wii';
+          // Remove any existing inner link
+          const existingInnerLink = card.querySelector('a');
+          if (existingInnerLink) {{
+            while (existingInnerLink.firstChild) {{
+              card.insertBefore(existingInnerLink.firstChild, existingInnerLink);
+            }}
+            existingInnerLink.remove();
           }}
 
-          link.className = 'title-card-link';
-          link.rel = 'noopener noreferrer';
-          link.target = '_blank';
-          
-          if (title) link.setAttribute('data-title-name', title);
-          if (serial) link.setAttribute('data-serial', serial);
-          if (status) link.setAttribute('data-title-status', status);
-
-          card.parentNode.insertBefore(link, card);
-          link.appendChild(card);
-
-          const badge = card.querySelector('.fill-color-Playable, .status-badge');
-          if (badge && status) {{
-            badge.classList.add('status-' + status.toLowerCase());
+          // Check if card is already wrapped
+          if (card.parentElement?.classList.contains('title-card-link')) {{
+            return; // Already wrapped
           }}
-        }}
-      }});
-    }}
 
-    // Run link wrapping
-    wrapCardsWithLinks();
-    if (document.readyState === 'loading') {{
-      document.addEventListener('DOMContentLoaded', wrapCardsWithLinks);
-    }} else {{
-      wrapCardsWithLinks();
-    }}
-    setTimeout(wrapCardsWithLinks, 500);
+          let url_path = '';
+          if (title) {{
+            url_path = title
+              .toLowerCase()
+              .replace(/[^\\w\\s-]/g, '')
+              .replace(/\\s+/g, '-')
+              .replace(/-+/g, '-')
+              .replace(/^-|-$/g, '');
+          }} else if (serial) {{
+            url_path = serial;
+          }}
 
-    // Search functionality
-    document.getElementById('saved-search-input').addEventListener('input', function (e) {{
-      const searchTerm = e.target.value.toLowerCase();
-      const cards = document.querySelectorAll('.title-card');
-      let count = 0;
+          if (url_path) {{
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetUrl = urlParams.get('url');
+            const link = document.createElement('a');
 
-      cards.forEach(card => {{
-        const title = card.getAttribute('data-title-name') || '';
-        if (title.toLowerCase().includes(searchTerm) && searchTerm) {{
-          card.classList.remove('hidden-game');
-          card.classList.add('highlight-saved');
-          count++;
-        }} else if (searchTerm) {{
-          card.classList.add('hidden-game');
-          card.classList.remove('highlight-saved');
-        }} else {{
-          card.classList.remove('hidden-game');
-          card.classList.remove('highlight-saved');
-        }}
-      }});
+            if (targetUrl) {{
+              link.href = targetUrl.replace(/\\/$/, '') + '/wii/' + url_path;
+            }} else {{
+              link.href = 'https://meyt.netlify.app/search/' + url_path + ' wii';
+            }}
 
-      document.getElementById('saved-results-count').textContent =
-        searchTerm ? `Found ${{count}} game${{count !== 1 ? 's' : ''}}` : '';
-    }});
+            link.className = 'title-card-link';
+            link.rel = 'noopener noreferrer';
+            link.target = '_blank';
+            link.style.display = 'block';
+            link.style.textDecoration = 'none';
+            link.style.color = 'inherit';
+            
+            // Copy data attributes to link for search
+            if (title) link.setAttribute('data-title-name', title);
+            if (serial) link.setAttribute('data-serial', serial);
+            if (status) link.setAttribute('data-title-status', status);
 
-    // Keyboard shortcut
-    document.addEventListener('keydown', function(e) {{
-      if (e.key === '/' && !document.getElementById('saved-search-input').matches(':focus')) {{
-        e.preventDefault();
-        document.getElementById('saved-search-input').focus();
+            // Wrap the card with the new link
+            card.parentNode.insertBefore(link, card);
+            link.appendChild(card);
+
+            const badge = card.querySelector('.fill-color-Playable, .status-badge');
+            if (badge && status) {{
+              badge.classList.add('status-' + status.toLowerCase());
+            }}
+          }}
+        }});
       }}
-    }});
+
+      // Run link wrapping
+      wrapCardsWithLinks();
+      if (document.readyState === 'loading') {{
+        document.addEventListener('DOMContentLoaded', wrapCardsWithLinks);
+      }} else {{
+        wrapCardsWithLinks();
+      }}
+      setTimeout(wrapCardsWithLinks, 500);
+
+      // Search functionality - FIXED VERSION (like Dreamcast)
+      document.getElementById('saved-search-input').addEventListener('input', function (e) {{
+        const searchTerm = e.target.value.toLowerCase();
+        // Target the title-card-link elements directly (like dreamcast-card-link)
+        const links = document.querySelectorAll('.title-card-link');
+        let count = 0;
+
+        links.forEach(link => {{
+          const title = link.getAttribute('data-title-name') || '';
+
+          if (title.toLowerCase().includes(searchTerm) && searchTerm) {{
+            // Show this item
+            link.classList.remove('hidden-game');
+            link.classList.add('highlight-saved');
+            count++;
+          }} else if (searchTerm) {{
+            // Hide this item
+            link.classList.add('hidden-game');
+            link.classList.remove('highlight-saved');
+          }} else {{
+            // Show all when search is cleared
+            link.classList.remove('hidden-game');
+            link.classList.remove('highlight-saved');
+          }}
+        }});
+
+        document.getElementById('saved-results-count').textContent =
+          searchTerm ? `Found ${{count}} game${{count !== 1 ? 's' : ''}}` : '';
+      }});
+
+      // Keyboard shortcut
+      document.addEventListener('keydown', function(e) {{
+        if (e.key === '/' && !document.getElementById('saved-search-input').matches(':focus')) {{
+          e.preventDefault();
+          document.getElementById('saved-search-input').focus();
+        }}
+      }});
   </script>
 </body>
 
