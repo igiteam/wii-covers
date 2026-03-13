@@ -208,6 +208,13 @@ def generate_html(games):
       gap: 10px;
     }}
 
+    .icon {{
+      width: 34px;
+      height: 34px;
+      border-radius: 4px;
+      object-fit: cover;
+    }}
+
     #saved-search-input::placeholder {{
       color: #aaa;
     }}
@@ -233,18 +240,13 @@ def generate_html(games):
 <body>
   <div id="saved-search-container">
     <div class="search-row">
-      <img src="https://cdn.sdappnet.cloud/rtx/images/dolphin_wii_icon.png" style="width:34px; border-radius: 4px; background: white; padding: 2px;"
-        alt="Wii logo">
+      <img src="https://cdn.sdappnet.cloud/rtx/images/dolphin_wii_icon.png" class="icon" alt="Wii logo">
       <input type="text" id="saved-search-input" placeholder="Search games...">
       <a href="https://github.com/igiteam/wiimote" target="_blank">
-        <img src="https://cdn.sdappnet.cloud/rtx/images/wiimote_icon.png" 
-             style="width:34px; border-radius: 4px; background: white; padding: 2px;" 
-             alt="GitHub">
+        <img class="icon" src="https://cdn.sdappnet.cloud/rtx/images/wiimote_icon.png">
       </a>
       <a href="https://cdn.sdappnet.cloud/rtx/nintendo-magazine.html" target="_blank">
-        <img src="https://cdn.sdappnet.cloud/rtx/images/nintendo-magazine.png" 
-             style="width:34px; border-radius: 4px; background: white; padding: 2px;" 
-             alt="Nintendo">
+        <img class="icon" src="https://cdn.sdappnet.cloud/rtx/images/nintendo-magazine.png">
       </a>
     </div>
     <div id="saved-results-count"></div>
