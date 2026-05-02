@@ -10,8 +10,8 @@ import os
 from datetime import datetime
 
 # Configuration
-JSON_FILE = "wii_games_covers.json"
-OUTPUT_HTML = "index.html"
+JSON_FILE = "wii_games_dolphin.json"
+OUTPUT_HTML = "wii_games_dolphin.html"
 PLACEHOLDER_IMAGE = "https://raw.githubusercontent.com/igiteam/wii-covers/main/covers/wii-cover-default.png"
 RAW_BASE_URL = "https://raw.githubusercontent.com/igiteam/wii-covers/main/covers"
 

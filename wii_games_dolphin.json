@@ -4914,16 +4914,22 @@
     "3d_cover_url": "https://raw.githubusercontent.com/igiteam/wii-covers/main/covers/3d/RB4X08.png"
   },
   {
-    "title": "Brothers in Arms: Double Time",
+    "title": "Brothers in Arms: Double Time  (Brothers in Arms - Road to Hill 30)",
     "id": "RB5E41",
-    "cover_url": "https://raw.githubusercontent.com/igiteam/wii-covers/main/covers/2d/RB5E41.png",
-    "3d_cover_url": "https://raw.githubusercontent.com/igiteam/wii-covers/main/covers/3d/RB5E41.png"
+    "cover_url": "https://raw.githubusercontent.com/igiteam/wii-covers/main/covers/2d/RB5P41-1.png",
+    "3d_cover_url": "https://raw.githubusercontent.com/igiteam/wii-covers/main/covers/3d/RB5P41-1.png"
   },
   {
     "title": "Brothers in Arms: Earned in Blood",
     "id": "RB5P41",
     "cover_url": "https://raw.githubusercontent.com/igiteam/wii-covers/main/covers/2d/RB5P41.png",
     "3d_cover_url": "https://raw.githubusercontent.com/igiteam/wii-covers/main/covers/3d/RB5P41.png"
+  },
+  {
+    "title": "Brothers in Arms: Road to Hill 30",
+    "id": "RI8P41",
+    "cover_url": "https://raw.githubusercontent.com/igiteam/wii-covers/main/covers/2d/RI8P41.png",
+    "3d_cover_url": "https://raw.githubusercontent.com/igiteam/wii-covers/main/covers/3d/RI8P41.png"
   },
   {
     "title": "ボンバーマン",
@@ -8057,18 +8063,7 @@
     "cover_url": "https://raw.githubusercontent.com/igiteam/wii-covers/main/covers/2d/RI7E4Z.png",
     "3d_cover_url": "https://raw.githubusercontent.com/igiteam/wii-covers/main/covers/3d/RI7E4Z.png"
   },
-  {
-    "title": "Brothers in Arms: Double Time (Brothers in Arms - Road to Hill 30)",
-    "id": "RI8E41",
-    "cover_url": "https://raw.githubusercontent.com/igiteam/wii-covers/main/covers/2d/RI8E41.png",
-    "3d_cover_url": "https://raw.githubusercontent.com/igiteam/wii-covers/main/covers/3d/RI8E41.png"
-  },
-  {
-    "title": "Brothers in Arms: Road to Hill 30",
-    "id": "RI8P41",
-    "cover_url": "https://raw.githubusercontent.com/igiteam/wii-covers/main/covers/2d/RI8P41.png",
-    "3d_cover_url": "https://raw.githubusercontent.com/igiteam/wii-covers/main/covers/3d/RI8P41.png"
-  },
+
   {
     "title": "Diva Girls: Divas on Ice",
     "id": "RI9EGT",
