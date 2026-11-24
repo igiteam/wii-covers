@@ -193,7 +193,7 @@
       <a href="https://github.com/igiteam/wiimote" target="_blank">
         <img class="icon" src="./wiimote_icon.png">
       </a>
-      <a href="https://cdn.gitgpt.chat/rtx/nintendo-magazine.html" target="_blank">
+      <a href="https://wiimagazine.macosxjs.com" target="_blank">
         <img class="icon" src="./nintendo-magazine.png">
       </a>
     </div>
@@ -43119,6 +43119,53 @@
       wrapCardsWithLinks();
     }
     setTimeout(wrapCardsWithLinks, 500);
+
+// FIX: Wrap ALL remaining title cards in search links
+function wrapRemainingCardsWithLinks() {
+  document.querySelectorAll('.title-card').forEach(card => {
+
+    // Skip cards already wrapped
+    if (card.closest('a.title-card-link')) return;
+
+    const title =
+      card.getAttribute('data-title-name') ||
+      card.querySelector('img')?.getAttribute('title') ||
+      card.querySelector('.fallback-title')?.textContent.trim();
+
+    if (!title) return;
+
+    const link = document.createElement('a');
+
+    link.href = 'https://meyt.macosxjs.com/search/' +
+                encodeURIComponent(title + ' wii');
+
+    link.className = 'title-card-link';
+    link.rel = 'noopener noreferrer';
+    link.target = '_blank';
+
+    link.style.display = 'block';
+    link.style.textDecoration = 'none';
+    link.style.color = 'inherit';
+
+    link.setAttribute('data-title-name', title);
+
+    const status = card.getAttribute('data-title-status');
+    if (status) {
+      link.setAttribute('data-title-status', status);
+    }
+
+    card.parentNode.insertBefore(link, card);
+    link.appendChild(card);
+  });
+}
+
+wrapRemainingCardsWithLinks();
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', wrapRemainingCardsWithLinks);
+}
+
+setTimeout(wrapRemainingCardsWithLinks, 500);
 
     // Search functionality - NO GREEN BORDERS
     document.getElementById('saved-search-input').addEventListener('input', function (e) {
